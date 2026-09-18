@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3 mt-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow p-3 mb-4 rounded">
+          <div class="card-body">
+            <h2>{{ template_data.title }}</h2>
+            <hr />
+            <form method="POST">
+              {% csrf_token %}
+              {{ template_data.form.as_p }}
+              <button type="submit" class="btn bg-dark text-white">Save</button>
+              <a class="btn btn-outline-secondary" href="{% url 'accounts.profile_view' user_id=user.id %}">
+                View public profile
+              </a>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

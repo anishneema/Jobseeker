@@ -28,6 +28,8 @@
             {% if is_recruiter %}
             <a class="nav-link" href="{% url 'jobs.post' %}">Post a Job</a>
             <a class="nav-link" href="{% url 'jobs.mine' %}">My Jobs</a>
+            {% elif is_seeker %}
+            <a class="nav-link" href="{% url 'accounts.profile_edit' %}">My Profile</a>
             {% endif %}
             <div class="vr bg-white mx-2 d-none d-lg-block"></div>
             {% if user.is_authenticated %}

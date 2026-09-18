@@ -2,6 +2,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
+from .models import JobSeekerProfile
 
 
 class CustomErrorList(ErrorList):
@@ -39,3 +40,31 @@ class SignUpForm(UserCreationForm):
             self.add_error('company_name',
                            'Company name is required for recruiters.')
         return cleaned_data
+
+class JobSeekerProfileForm(forms.ModelForm):
+    class Meta:
+        model = JobSeekerProfile
+        fields = [
+            'headline',
+            'skills',
+            'education',
+            'work_experience',
+            'links',
+            'show_skills',
+            'show_education',
+            'show_work_experience',
+            'show_links',
+        ]
+        widgets = {
+            'education': forms.Textarea(attrs={'rows': 4}),
+            'work_experience': forms.Textarea(attrs={'rows': 4}),
+            'links': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.update({'class': 'form-control'})
+            else:
+                field.widget.attrs.update({'class': 'form-check-input'})
