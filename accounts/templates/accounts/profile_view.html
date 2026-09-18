@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <div class="card shadow p-3 mb-4">
+      <div class="card-body">
+        <h2>{{ template_data.profile.user.username }}</h2>
+        {% if template_data.profile.headline %}
+        <p class="text-muted mb-1">{{ template_data.profile.headline }}</p>
+        {% endif %}
+        <hr />
+
+        {% if template_data.show_skills %}
+        <h5>Skills</h5>
+        <p>{{ template_data.profile.skills }}</p>
+        {% endif %}
+
+        {% if template_data.show_education %}
+        <h5>Education</h5>
+        <p>{{ template_data.profile.education|linebreaks }}</p>
+        {% endif %}
+
+        {% if template_data.show_work_experience %}
+        <h5>Work Experience</h5>
+        <p>{{ template_data.profile.work_experience|linebreaks }}</p>
+        {% endif %}
+
+        {% if template_data.show_links %}
+        <h5>Links</h5>
+        <p>{{ template_data.profile.links|urlize|linebreaksbr }}</p>
+        {% endif %}
+
+        {% if template_data.is_owner %}
+        <a class="btn bg-dark text-white" href="{% url 'accounts.profile_edit' %}">Edit profile</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
