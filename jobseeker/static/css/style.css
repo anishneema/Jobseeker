@@ -1,0 +1,19 @@
+.navbar a.nav-link {
+  color: #FFFEF6 !important;
+}
+.bg-dark {
+  background-color: #2E2E2E !important;
+}
+.ms-footer-bottom span {
+  font-size: 13px;
+  line-height: 38px;
+}
+body {
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body > div {
+  flex: 1;
+}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <div class="card shadow p-3 mb-4">
+      <div class="card-body">
+        <h2>{{ template_data.job.title }}</h2>
+        <p class="text-muted mb-1">
+          {{ template_data.job.company_name }}
+          · {{ template_data.job.location }}
+          · {{ template_data.job.get_remote_onsite_display }}
+        </p>
+        <p>{{ template_data.job.salary_range }}</p>
+        <p>
+          <strong>Skills:</strong> {{ template_data.job.skills_required }}
+          {% if template_data.job.visa_sponsorship %}
+          <span class="badge text-bg-secondary ms-2">Visa sponsorship</span>
+          {% endif %}
+        </p>
+        <hr />
+        <p>{{ template_data.job.description|linebreaks }}</p>
+        {% if template_data.is_owner %}
+        <a class="btn bg-dark text-white" href="{% url 'jobs.edit' id=template_data.job.id %}">Edit posting</a>
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'jobs.index' %}">Back to search</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
