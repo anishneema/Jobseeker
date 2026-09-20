@@ -1,4 +1,5 @@
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django import forms
 from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
@@ -20,17 +21,30 @@ class SignUpForm(UserCreationForm):
         ('seeker', 'Job Seeker'),
         ('recruiter', 'Recruiter'),
     ]
+    email = forms.EmailField(required=True)
     role = forms.ChoiceField(choices=ROLE_CHOICES)
     company_name = forms.CharField(required=False, max_length=255)
 
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ('email',)
+
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
-        for fieldname in ['username', 'password1', 'password2',
+        for fieldname in ['username', 'email', 'password1', 'password2',
                           'role', 'company_name']:
             self.fields[fieldname].help_text = None
             self.fields[fieldname].widget.attrs.update(
                 {'class': 'form-control'}
             )
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                'An account with this email already exists.'
+            )
+        return email
 
     def clean(self):
         cleaned_data = super().clean()
