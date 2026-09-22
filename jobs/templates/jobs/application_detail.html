@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3">
+  <div class="container">
+
+    <h2>Candidate Application</h2>
+    <hr />
+
+    <div class="card shadow p-3 mb-4">
+      <h4>Application Details</h4>
+
+      <p>
+        <strong>Position:</strong>
+        {{ template_data.application.job.title }}
+      </p>
+
+      <p>
+        <strong>Date Applied:</strong>
+        {{ template_data.application.date_applied }}
+      </p>
+    </div>
+
+    <div class="card shadow p-3 mb-4">
+
+      <h4>{{ template_data.profile.user.username }}</h4>
+
+      <p>
+        <strong>Headline:</strong>
+        {{ template_data.profile.headline }}
+      </p>
+
+      <p>
+        <strong>Skills:</strong>
+        {{ template_data.profile.skills }}
+      </p>
+
+      <p>
+        <strong>Location:</strong>
+        {{ template_data.profile.location }}
+      </p>
+
+      <p>
+        <strong>Projects:</strong>
+        {{ template_data.profile.projects }}
+      </p>
+
+      <p>
+        <strong>Education:</strong>
+        {{ template_data.profile.education }}
+      </p>
+
+      <p>
+        <strong>Work Experience:</strong>
+        {{ template_data.profile.work_experience }}
+      </p>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

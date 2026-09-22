@@ -53,3 +53,9 @@ class JobPosting(models.Model):
         if profile:
             return profile.company_name
         return self.recruiter.username
+class Application(models.Model):
+    job = models.ForeignKey(JobPosting, on_delete=models.CASCADE)
+    applicant = models.ForeignKey(User, on_delete=models.CASCADE)
+    date_applied = models.DateTimeField(auto_now_add = True)
+    def __str__(self):
+        return f'{self.applicant.username} - {self.job.title}'

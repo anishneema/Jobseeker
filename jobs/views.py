@@ -2,7 +2,7 @@ from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import JobPosting
+from .models import JobPosting, Application
 from .forms import JobPostingForm
 
 
@@ -122,3 +122,25 @@ def mine(request):
     template_data['jobs'] = JobPosting.objects.filter(recruiter=request.user)
     return render(request, 'jobs/my_jobs.html',
                   {'template_data': template_data})
+@recruiter_required
+def application_detail(request, id):
+
+    application = get_object_or_404(
+        Application,
+        id=id,
+        job__recruiter=request.user
+    )
+
+    profile = application.applicant.jobseeker_profile
+
+    template_data = {
+        'title': 'Candidate Application',
+        'application': application,
+        'profile': profile,
+    }
+
+    return render(
+        request,
+        'jobs/application_detail.html',
+        {'template_data': template_data}
+    )

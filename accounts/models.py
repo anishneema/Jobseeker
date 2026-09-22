@@ -21,6 +21,8 @@ class JobSeekerProfile(models.Model):
         blank=True,
         help_text='Comma-separated skills, e.g. Python, Django, SQL'
     )
+    location = models.CharField(max_length=200, blank=True)
+    projects = models.TextField(blank =True)
     education = models.TextField(blank=True)
     work_experience = models.TextField(blank=True)
     links = models.TextField(
@@ -28,6 +30,7 @@ class JobSeekerProfile(models.Model):
         help_text='One link per line, e.g. LinkedIn, GitHub, portfolio'
     )
     show_skills = models.BooleanField(default=True)
+    
     show_education = models.BooleanField(default=True)
     show_work_experience = models.BooleanField(default=True)
     show_links = models.BooleanField(default=True)
