@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3">
+  <div class="container">
+
+    <h2>Search Candidates</h2>
+    <hr />
+
+    <form method="GET" class="card shadow p-3 mb-4">
+
+      <label>Skills</label>
+      <input
+        type="text"
+        name="skills"
+        class="form-control mb-3"
+        value="{{ template_data.skills }}"
+      >
+
+      <label>Location</label>
+      <input
+        type="text"
+        name="location"
+        class="form-control mb-3"
+        value="{{ template_data.location }}"
+      >
+
+      <label>Projects</label>
+      <input
+        type="text"
+        name="projects"
+        class="form-control mb-3"
+        value="{{ template_data.projects }}"
+      >
+
+      <button class="btn bg-dark text-white" type="submit">
+        Search
+      </button>
+
+    </form>
+
+    {% for candidate in template_data.candidates %}
+
+      <div class="card shadow-sm p-3 mb-3">
+
+        <h5>{{ candidate.user.username }}</h5>
+
+        <p>
+          <strong>Skills:</strong>
+          {{ candidate.skills }}
+        </p>
+
+        <p>
+          <strong>Location:</strong>
+          {{ candidate.location }}
+        </p>
+
+        <p>
+          <strong>Projects:</strong>
+          {{ candidate.projects }}
+        </p>
+
+        <a
+          class="btn btn-outline-dark"
+          href="{% url 'accounts.profile_view' user_id=candidate.user.id %}"
+        >
+          View Profile
+        </a>
+
+      </div>
+
+    {% empty %}
+
+      <p>No candidates found.</p>
+
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}
