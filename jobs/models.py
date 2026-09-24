@@ -53,9 +53,50 @@ class JobPosting(models.Model):
         if profile:
             return profile.company_name
         return self.recruiter.username
+
+
 class Application(models.Model):
-    job = models.ForeignKey(JobPosting, on_delete=models.CASCADE)
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE)
-    date_applied = models.DateTimeField(auto_now_add = True)
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('review', 'Review'),
+        ('interview', 'Interview'),
+        ('offer', 'Offer'),
+        ('closed', 'Closed'),
+    ]
+
+    job = models.ForeignKey(
+        JobPosting,
+        on_delete=models.CASCADE,
+        related_name='applications'
+    )
+    applicant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='applications'
+    )
+    note = models.TextField(
+        blank=True,
+        help_text='A short note tailored to this job (optional).'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='applied'
+    )
+    date_applied = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date_applied']
+        unique_together = ('job', 'applicant')
+
     def __str__(self):
-        return f'{self.applicant.username} - {self.job.title}'
+        return f'{self.applicant.username} -> {self.job.title}'
+
+    def status_badge_class(self):
+        return {
+            'applied': 'text-bg-secondary',
+            'review': 'text-bg-info',
+            'interview': 'text-bg-primary',
+            'offer': 'text-bg-success',
+            'closed': 'text-bg-dark',
+        }[self.status]

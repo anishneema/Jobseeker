@@ -1,5 +1,5 @@
 from django import forms
-from .models import JobPosting
+from .models import JobPosting, Application
 
 
 class JobPostingForm(forms.ModelForm):
@@ -39,3 +39,20 @@ class JobPostingForm(forms.ModelForm):
                     'Maximum salary must be greater than or equal to minimum salary.'
                 )
         return cleaned_data
+
+
+class ApplicationForm(forms.ModelForm):
+    class Meta:
+        model = Application
+        fields = ['note']
+        widgets = {
+            'note': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Add a note tailored to this job (optional)',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['note'].required = False
+        self.fields['note'].widget.attrs.update({'class': 'form-control'})
