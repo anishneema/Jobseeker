@@ -3,7 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .forms import SignUpForm, CustomErrorList, JobSeekerProfileForm
+from django.core.mail import EmailMessage
+from .forms import SignUpForm, CustomErrorList, JobSeekerProfileForm, EmailCandidateForm
 from .models import RecruiterProfile, JobSeekerProfile
 from django.contrib import messages
 
@@ -128,3 +129,35 @@ def candidate_search(request):
         request, 'accounts/candidate_search.html',
         {'template_data': template_data}
     )
+
+
+@login_required
+def email_candidate(request, user_id):
+    if not hasattr(request.user, 'recruiter_profile'):
+        return redirect('home.index')
+    profile = get_object_or_404(JobSeekerProfile, user__id=user_id)
+    candidate = profile.user
+    if not candidate.email:
+        messages.error(request, 'This candidate has no email on file.')
+        return redirect('accounts.candidate_search')
+    template_data = {}
+    template_data['title'] = 'Send Email'
+    template_data['candidate'] = candidate
+    if request.method == 'GET':
+        template_data['form'] = EmailCandidateForm()
+        return render(request, 'accounts/email_candidate.html',
+                      {'template_data': template_data})
+    form = EmailCandidateForm(request.POST)
+    if form.is_valid():
+        email = EmailMessage(
+            subject=form.cleaned_data['subject'],
+            body=form.cleaned_data['body'],
+            to=[candidate.email],
+            reply_to=[request.user.email],
+        )
+        email.send()
+        messages.success(request, f'Email sent to {candidate.username}.')
+        return redirect('accounts.candidate_search')
+    template_data['form'] = form
+    return render(request, 'accounts/email_candidate.html',
+                  {'template_data': template_data})

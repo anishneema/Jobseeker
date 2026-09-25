@@ -67,6 +67,13 @@
           View Profile
         </a>
 
+        <a
+          class="btn btn-outline-dark"
+          href="{% url 'accounts.email_candidate' user_id=candidate.user.id %}"
+        >
+          Email
+        </a>
+
       </div>
 
     {% empty %}

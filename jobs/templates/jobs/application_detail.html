@@ -55,6 +55,13 @@
         {{ template_data.profile.work_experience }}
       </p>
 
+      <a
+        class="btn bg-dark text-white"
+        href="{% url 'accounts.email_candidate' user_id=template_data.profile.user.id %}"
+      >
+        Email Candidate
+      </a>
+
     </div>
 
   </div>

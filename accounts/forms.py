@@ -55,6 +55,15 @@ class SignUpForm(UserCreationForm):
                            'Company name is required for recruiters.')
         return cleaned_data
 
+class EmailCandidateForm(forms.Form):
+    subject = forms.CharField(max_length=200)
+    body = forms.CharField(widget=forms.Textarea(attrs={'rows': 8}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            field.widget.attrs.update({'class': 'form-control'})
+
 class JobSeekerProfileForm(forms.ModelForm):
     class Meta:
         model = JobSeekerProfile
