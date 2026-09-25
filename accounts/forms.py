@@ -61,6 +61,8 @@ class JobSeekerProfileForm(forms.ModelForm):
         fields = [
             'headline',
             'skills',
+            'location',
+            'projects',
             'education',
             'work_experience',
             'links',
@@ -70,6 +72,7 @@ class JobSeekerProfileForm(forms.ModelForm):
             'show_links',
         ]
         widgets = {
+            'projects': forms.Textarea(attrs={'rows':4}),
             'education': forms.Textarea(attrs={'rows': 4}),
             'work_experience': forms.Textarea(attrs={'rows': 4}),
             'links': forms.Textarea(attrs={'rows': 3}),

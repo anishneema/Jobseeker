@@ -103,3 +103,28 @@ def profile_view(request, user_id):
     template_data['show_links'] = is_owner or (profile.show_links and bool(profile.links))
     return render(request, 'accounts/profile_view.html',
                   {'template_data': template_data})
+@login_required
+def candidate_search(request):
+    if not hasattr(request.user, 'recruiter_profile'):
+        return redirect('home.index')
+    candidates = JobSeekerProfile.objects.all()
+    skills = request.GET.get('skills', '').strip()
+    location = request.GET.get('location', '').strip()
+    projects = request.GET.get('projects', '').strip()
+    if skills:
+        candidates = candidates.filter(skills__icontains=skills)
+    if location:
+        candidates = candidates.filter(location__icontains=location)
+    if projects:
+        candidates = candidates.filter(projects__icontains=projects)
+    template_data = {
+        'title' : 'Search Candidates',
+        'candidates' : candidates,
+        'skills' : skills,
+        'location' : location,
+        'projects' : projects,
+    }
+    return render(
+        request, 'accounts/candidate_search.html',
+        {'template_data': template_data}
+    )

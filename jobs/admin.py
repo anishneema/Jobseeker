@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import JobPosting
+from .models import JobPosting, Application
 
 class JobPostingAdmin(admin.ModelAdmin):
     list_display = ('title', 'recruiter', 'location', 'status', 'date_posted')
@@ -13,3 +13,4 @@ class JobPostingAdmin(admin.ModelAdmin):
         self.message_user(request, f'{count} posting(s) closed.')
 
 admin.site.register(JobPosting, JobPostingAdmin)
+admin.site.register(Application)
