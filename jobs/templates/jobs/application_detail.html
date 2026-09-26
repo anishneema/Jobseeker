@@ -14,13 +14,20 @@
         <strong>Position:</strong>
         {{ template_data.application.job.title }}
       </p>
-
       <p>
         <strong>Date Applied:</strong>
         {{ template_data.application.date_applied }}
       </p>
-    </div>
+      <p>
+      <strong>Status:</strong>
+      {{ template_data.application.status }}
+      </p>
 
+      <p>
+      <strong>Note:</strong>
+      {{ template_data.application.note }}
+      </p>
+    </div>
     <div class="card shadow p-3 mb-4">
 
       <h4>{{ template_data.profile.user.username }}</h4>

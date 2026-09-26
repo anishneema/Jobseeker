@@ -123,6 +123,30 @@ def mine(request):
     return render(request, 'jobs/my_jobs.html',
                   {'template_data': template_data})
 @recruiter_required
+def job_applications(request, id):
+
+    job = get_object_or_404(
+        JobPosting,
+        id=id,
+        recruiter=request.user
+    )
+
+    applications = Application.objects.filter(
+        job=job
+    ).select_related('applicant')
+
+    template_data = {
+        'title': 'Job Applications',
+        'job': job,
+        'applications': applications,
+    }
+
+    return render(
+        request,
+        'jobs/job_applications.html',
+        {'template_data': template_data}
+    )
+@recruiter_required
 def application_detail(request, id):
 
     application = get_object_or_404(
