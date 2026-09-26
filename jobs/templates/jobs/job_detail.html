@@ -23,6 +23,26 @@
         <a class="btn bg-dark text-white" href="{% url 'jobs.edit' id=template_data.job.id %}">Edit posting</a>
         {% endif %}
         <a class="btn btn-outline-secondary" href="{% url 'jobs.index' %}">Back to search</a>
+
+        {% if template_data.application %}
+        <hr />
+        <p class="mb-1">
+          <span class="badge {{ template_data.application.status_badge_class }}">
+            {{ template_data.application.get_status_display }}
+          </span>
+          applied on {{ template_data.application.date_applied|date:"M j, Y" }}
+        </p>
+        {% if template_data.application.note %}
+        <p class="text-muted">Your note: {{ template_data.application.note }}</p>
+        {% endif %}
+        {% elif template_data.application_form %}
+        <hr />
+        <form method="POST" action="{% url 'jobs.apply' id=template_data.job.id %}">
+          {% csrf_token %}
+          {{ template_data.application_form.note }}
+          <button class="btn bg-dark text-white mt-2" type="submit">Apply</button>
+        </form>
+        {% endif %}
       </div>
     </div>
   </div>

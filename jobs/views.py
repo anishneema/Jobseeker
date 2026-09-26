@@ -2,8 +2,9 @@ from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from accounts.views import jobseeker_required
 from .models import JobPosting, Application
-from .forms import JobPostingForm
+from .forms import JobPostingForm, ApplicationForm
 
 
 def recruiter_required(view_func):
@@ -71,8 +72,36 @@ def show(request, id):
     template_data['is_owner'] = (
         request.user.is_authenticated and job.recruiter_id == request.user.id
     )
+    if request.user.is_authenticated and hasattr(request.user, 'jobseeker_profile'):
+        template_data['application'] = Application.objects.filter(
+            job=job, applicant=request.user
+        ).first()
+        template_data['application_form'] = ApplicationForm()
     return render(request, 'jobs/job_detail.html',
                   {'template_data': template_data})
+
+
+@jobseeker_required
+def apply(request, id):
+    job = get_object_or_404(JobPosting, id=id)
+    if request.method != 'POST':
+        return redirect('jobs.show', id=job.id)
+    if job.status != 'open':
+        messages.error(request, 'This job is no longer accepting applications.')
+        return redirect('jobs.show', id=job.id)
+    if Application.objects.filter(job=job, applicant=request.user).exists():
+        messages.error(request, 'You have already applied to this job.')
+        return redirect('jobs.show', id=job.id)
+    form = ApplicationForm(request.POST)
+    if form.is_valid():
+        application = form.save(commit=False)
+        application.job = job
+        application.applicant = request.user
+        application.save()
+        messages.success(request, 'Application submitted.')
+    else:
+        messages.error(request, 'Could not submit your application.')
+    return redirect('jobs.show', id=job.id)
 
 
 @recruiter_required
@@ -144,3 +173,14 @@ def application_detail(request, id):
         'jobs/application_detail.html',
         {'template_data': template_data}
     )
+
+
+@jobseeker_required
+def my_applications(request):
+    template_data = {}
+    template_data['title'] = 'My Applications'
+    template_data['applications'] = Application.objects.filter(
+        applicant=request.user
+    ).select_related('job', 'job__recruiter')
+    return render(request, 'jobs/my_applications.html',
+                  {'template_data': template_data})
