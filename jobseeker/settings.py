@@ -99,6 +99,10 @@ STATICFILES_DIRS = [
 
 LOGIN_URL = '/accounts/login/'
 
+# Emails print in the runserver terminal instead of really sending
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@jobseeker.com'
+
 MESSAGE_TAGS = {
     message_constants.ERROR: 'danger',
 }
