@@ -15,6 +15,7 @@
         </div>
         <div>
           <a class="btn btn-sm btn-outline-dark" href="{% url 'jobs.show' id=job.id %}">View</a>
+          <a class="btn btn-sm btn-outline-dark" href="{% url 'jobs.job_applications' id=job.id %}">Applicants</a>
           <a class="btn btn-sm bg-dark text-white" href="{% url 'jobs.edit' id=job.id %}">Edit</a>
         </div>
       </div>
