@@ -166,6 +166,9 @@ def application_detail(request, id):
         'title': 'Candidate Application',
         'application': application,
         'profile': profile,
+        'show_skills': profile.show_skills and bool(profile.skills),
+        'show_education': profile.show_education and bool(profile.education),
+        'show_work_experience': (profile.show_work_experience and bool(profile.work_experience)),
     }
 
     return render(

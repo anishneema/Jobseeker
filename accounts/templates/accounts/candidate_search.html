@@ -8,7 +8,7 @@
     <hr />
 
     <form method="GET" class="card shadow p-3 mb-4">
-
+      
       <label>Skills</label>
       <input
         type="text"
@@ -45,10 +45,12 @@
 
         <h5>{{ candidate.user.username }}</h5>
 
+        {% if candidate.show_skills %}
         <p>
           <strong>Skills:</strong>
           {{ candidate.skills }}
         </p>
+        {% endif %}
 
         <p>
           <strong>Location:</strong>
