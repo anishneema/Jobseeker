@@ -98,9 +98,7 @@ def profile_view(request, user_id):
     template_data['is_owner'] = is_owner
     template_data['show_skills'] = is_owner or (profile.show_skills and bool(profile.skills))
     template_data['show_education'] = is_owner or (profile.show_education and bool(profile.education))
-    template_data['show_work_experience'] = is_owner or (
-        profile.show_work_experience and bool(profile.work_experience)
-    )
+    template_data['show_work_experience'] = (profile.show_work_experience and bool(profile.work_experience))
     template_data['show_links'] = is_owner or (profile.show_links and bool(profile.links))
     return render(request, 'accounts/profile_view.html',
                   {'template_data': template_data})

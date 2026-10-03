@@ -34,10 +34,12 @@
         {{ template_data.profile.headline }}
       </p>
 
+      {% if template_data.show_skills %}
       <p>
         <strong>Skills:</strong>
         {{ template_data.profile.skills }}
       </p>
+      {% endif %}
 
       <p>
         <strong>Location:</strong>
@@ -49,15 +51,19 @@
         {{ template_data.profile.projects }}
       </p>
 
+      {% if template_data.show_education %}
       <p>
         <strong>Education:</strong>
         {{ template_data.profile.education }}
       </p>
+      {% endif %}
 
+      {% if template_data.show_work_experience %}
       <p>
         <strong>Work Experience:</strong>
         {{ template_data.profile.work_experience }}
       </p>
+      {% endif %}
 
       <a
         class="btn bg-dark text-white"
