@@ -23,6 +23,17 @@
         <a class="btn bg-dark text-white" href="{% url 'jobs.edit' id=template_data.job.id %}">Edit posting</a>
         {% endif %}
         <a class="btn btn-outline-secondary" href="{% url 'jobs.index' %}">Back to search</a>
+        {% if template_data.in_cart is not None %}
+        {% if template_data.in_cart %}
+        <span class="btn btn-outline-dark disabled">In your cart</span>
+        {% else %}
+        <form method="POST" action="{% url 'jobs.cart_add' id=template_data.job.id %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'jobs.show' id=template_data.job.id %}">
+          <button type="submit" class="btn btn-outline-dark">Add to Cart</button>
+        </form>
+        {% endif %}
+        {% endif %}
 
         {% if template_data.application %}
         <hr />

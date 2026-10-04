@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <h2>Recommended for You</h2>
+    <p class="text-muted">Recommended jobs matched against the skills on your profile</p>
+    <hr />
+
+    {% if not template_data.has_skills %}
+    <p>
+      Add some skills to your
+      <a href="{% url 'accounts.profile_edit' %}">profile</a>
+      and we'll recommend jobs that match them.
+    </p>
+    {% elif template_data.scored_jobs %}
+    <div class="row">
+      {% for entry in template_data.scored_jobs %}
+      <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">{{ entry.job.title }}</h5>
+            <p class="mb-1 text-muted">
+              {{ entry.job.company_name }} · {{ entry.job.location }}
+              · {{ entry.job.get_remote_onsite_display }}
+            </p>
+            <p class="mb-1">{{ entry.job.salary_range }}</p>
+            <p class="mb-2">
+              <span class="badge bg-dark">
+                {{ entry.match_count }} skill{{ entry.match_count|pluralize }} matched
+              </span>
+            </p>
+            <p class="mb-2">
+              <strong>Matched skills:</strong>
+              {{ entry.matched_skills|join:", " }}
+            </p>
+            <a href="{% url 'jobs.show' id=entry.job.id %}" class="btn bg-dark text-white">View</a>
+            <form method="POST" action="{% url 'jobs.cart_add' id=entry.job.id %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'jobs.recommendations' %}">
+              <button type="submit" class="btn btn-outline-dark">Add to Cart</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>No open jobs currently match your skills — check back later or try broadening your skills list.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

@@ -100,3 +100,23 @@ class Application(models.Model):
             'offer': 'text-bg-success',
             'closed': 'text-bg-dark',
         }[self.status]
+
+class CartItem(models.Model):
+    jobseeker = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cart_items'
+    )
+    job = models.ForeignKey(
+        JobPosting,
+        on_delete=models.CASCADE,
+        related_name='cart_items'
+    )
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date_added']
+        unique_together = ('jobseeker', 'job')
+
+    def __str__(self):
+        return f'{self.jobseeker.username} -> {self.job.title} (cart)'

@@ -70,6 +70,17 @@
             <p class="mb-2"><span class="badge text-bg-secondary">Visa sponsorship</span></p>
             {% endif %}
             <a href="{% url 'jobs.show' id=job.id %}" class="btn bg-dark text-white">View</a>
+            {% if is_seeker %}
+            {% if job.id in template_data.cart_job_ids %}
+            <span class="btn btn-outline-dark disabled">In Cart</span>
+            {% else %}
+            <form method="POST" action="{% url 'jobs.cart_add' id=job.id %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="btn btn-outline-dark">Add to Cart</button>
+            </form>
+            {% endif %}
+            {% endif %}
           </div>
         </div>
       </div>
