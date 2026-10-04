@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import JobPosting, Application
+from .models import JobPosting, Application, CartItem
 
 class JobPostingAdmin(admin.ModelAdmin):
     list_display = ('title', 'recruiter', 'location', 'status', 'date_posted')
@@ -14,3 +14,4 @@ class JobPostingAdmin(admin.ModelAdmin):
 
 admin.site.register(JobPosting, JobPostingAdmin)
 admin.site.register(Application)
+admin.site.register(CartItem)

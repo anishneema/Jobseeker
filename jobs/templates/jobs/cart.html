@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <h2>My Cart</h2>
+    <p class="text-muted">Jobs you've saved to review before applying</p>
+    <hr />
+
+    {% if template_data.items %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle bg-white shadow-sm">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Salary</th>
+            <th>Skills</th>
+            <th>Added</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in template_data.items %}
+          <tr>
+            <td>{{ item.job.title }}</td>
+            <td>{{ item.job.company_name }}</td>
+            <td>{{ item.job.location }} ({{ item.job.get_remote_onsite_display }})</td>
+            <td>{{ item.job.salary_range }}</td>
+            <td>{{ item.job.skills_required }}</td>
+            <td>{{ item.date_added|date:"M j, Y" }}</td>
+            <td class="text-end">
+              {% if item.job.id in template_data.applied_job_ids %}
+              <span class="badge text-bg-secondary">Already applied</span>
+              {% endif %}
+              <a href="{% url 'jobs.show' id=item.job.id %}" class="btn btn-sm bg-dark text-white">
+                View / Apply
+              </a>
+              <form method="POST" action="{% url 'jobs.cart_remove' id=item.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'jobs.cart' %}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>Your cart is empty. Browse <a href="{% url 'jobs.index' %}">job postings</a> and add ones you're interested in.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

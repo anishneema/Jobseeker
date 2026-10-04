@@ -3,8 +3,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from accounts.views import jobseeker_required
-from .models import JobPosting, Application
+from .models import JobPosting, Application, CartItem
 from .forms import JobPostingForm, ApplicationForm
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 
 def recruiter_required(view_func):
@@ -60,6 +62,11 @@ def index(request):
         'remote_onsite': remote_onsite,
         'visa_sponsorship': visa_sponsorship,
     }
+    if request.user.is_authenticated and hasattr(request.user, 'jobseeker_profile'):
+        template_data['cart_job_ids'] = set(CartItem.objects.filter(
+            jobseeker=request.user
+        ).values_list('job_id', flat=True))
+
     return render(request, 'jobs/job_list.html',
                   {'template_data': template_data})
 
@@ -77,6 +84,9 @@ def show(request, id):
             job=job, applicant=request.user
         ).first()
         template_data['application_form'] = ApplicationForm()
+        template_data['in_cart'] = CartItem.objects.filter(
+            job=job, jobseeker=request.user
+        ).exists()
     return render(request, 'jobs/job_detail.html',
                   {'template_data': template_data})
 
@@ -211,3 +221,83 @@ def job_applications(request, id):
         'jobs/job_applications.html',
         {'template_data': template_data}
     )
+
+def _safe_next(request, fallback):
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}
+    ):
+        return next_url
+    return fallback
+
+@jobseeker_required
+def recommendations(request):
+    profile = request.user.jobseeker_profile
+    candidate_skills = {
+        s.strip().lower() for s in profile.skills.split(',') if s.strip()
+    }
+    applied_job_ids = Application.objects.filter(
+        applicant=request.user
+    ).values_list('job_id', flat=True)
+
+    scored_jobs = []
+    if candidate_skills:
+        open_jobs = JobPosting.objects.filter(
+            status='open'
+        ).exclude(id__in=applied_job_ids)
+        for job in open_jobs:
+            job_skills = {
+                s.strip().lower() for s in job.skills_required.split(',') if s.strip()
+            }
+            matched = candidate_skills & job_skills
+            if matched:
+                scored_jobs.append({
+                    'job': job,
+                    'matched_skills': sorted(matched),
+                    'match_count': len(matched),
+                })
+        scored_jobs.sort(key=lambda entry: entry['match_count'], reverse=True)
+
+    template_data = {
+        'title': 'Recommended for You',
+        'scored_jobs': scored_jobs,
+        'has_skills': bool(candidate_skills),
+    }
+    return render(request, 'jobs/recommendations.html',
+                  {'template_data': template_data})
+
+
+@jobseeker_required
+def cart(request):
+    items = CartItem.objects.filter(
+        jobseeker=request.user
+    ).select_related('job', 'job__recruiter')
+    applied_job_ids = set(Application.objects.filter(
+        applicant=request.user
+    ).values_list('job_id', flat=True))
+
+    template_data = {
+        'title': 'My Cart',
+        'items': items,
+        'applied_job_ids': applied_job_ids,
+    }
+    return render(request, 'jobs/cart.html', {'template_data': template_data})
+
+
+@jobseeker_required
+def cart_add(request, id):
+    job = get_object_or_404(JobPosting, id=id)
+    if request.method != 'POST':
+        return redirect('jobs.show', id=job.id)
+    CartItem.objects.get_or_create(jobseeker=request.user, job=job)
+    messages.success(request, f'Added "{job.title}" to your cart.')
+    return redirect(_safe_next(request, reverse('jobs.show', args=[job.id])))
+
+
+@jobseeker_required
+def cart_remove(request, id):
+    item = get_object_or_404(CartItem, id=id, jobseeker=request.user)
+    if request.method == 'POST':
+        item.delete()
+        messages.success(request, 'Removed from your cart.')
+    return redirect(_safe_next(request, reverse('jobs.cart')))
