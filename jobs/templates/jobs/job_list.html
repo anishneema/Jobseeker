@@ -5,6 +5,7 @@
     <h2>Search Jobs</h2>
     <hr />
     <form method="GET" class="card shadow p-3 mb-4">
+      <input type="hidden" name="view" id="search-view" value="{% if template_data.map_view %}map{% endif %}">
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label" for="title">Title</label>
@@ -56,39 +57,223 @@
       </div>
     </form>
 
-    {% if template_data.jobs %}
-    <div class="row">
-      {% for job in template_data.jobs %}
-      <div class="col-md-6 mb-3">
-        <div class="card h-100 shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">{{ job.title }}</h5>
-            <p class="mb-1 text-muted">{{ job.location }} · {{ job.get_remote_onsite_display }}</p>
-            <p class="mb-1">{{ job.salary_range }}</p>
-            <p class="mb-2"><strong>Skills:</strong> {{ job.skills_required }}</p>
-            {% if job.visa_sponsorship %}
-            <p class="mb-2"><span class="badge text-bg-secondary">Visa sponsorship</span></p>
-            {% endif %}
-            <a href="{% url 'jobs.show' id=job.id %}" class="btn bg-dark text-white">View</a>
-            {% if is_seeker %}
-            {% if job.id in template_data.cart_job_ids %}
-            <span class="btn btn-outline-dark disabled">In Cart</span>
-            {% else %}
-            <form method="POST" action="{% url 'jobs.cart_add' id=job.id %}" class="d-inline">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.get_full_path }}">
-              <button type="submit" class="btn btn-outline-dark">Add to Cart</button>
-            </form>
-            {% endif %}
-            {% endif %}
+    <div class="btn-group mb-3" role="group" aria-label="Job results view">
+      <button type="button" id="list-view-btn" class="btn {% if template_data.map_view %}btn-outline-dark{% else %}bg-dark text-white{% endif %}">List</button>
+      <button type="button" id="map-view-btn" class="btn {% if template_data.map_view %}bg-dark text-white{% else %}btn-outline-dark{% endif %}">Map</button>
+    </div>
+
+    <div id="job-list" class="{% if template_data.map_view %}d-none{% endif %}">
+      {% if template_data.jobs %}
+      <div class="row">
+        {% for job in template_data.jobs %}
+        <div class="col-md-6 mb-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">{{ job.title }}</h5>
+              <p class="mb-1 text-muted">{{ job.location }} · {{ job.get_remote_onsite_display }}</p>
+              <p class="mb-1">{{ job.salary_range }}</p>
+              <p class="mb-2"><strong>Skills:</strong> {{ job.skills_required }}</p>
+              {% if job.visa_sponsorship %}
+              <p class="mb-2"><span class="badge text-bg-secondary">Visa sponsorship</span></p>
+              {% endif %}
+              <a href="{% url 'jobs.show' id=job.id %}" class="btn bg-dark text-white">View</a>
+              {% if is_seeker %}
+              {% if job.id in template_data.cart_job_ids %}
+              <span class="btn btn-outline-dark disabled">In Cart</span>
+              {% else %}
+              <form method="POST" action="{% url 'jobs.cart_add' id=job.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline-dark">Add to Cart</button>
+              </form>
+              {% endif %}
+              {% endif %}
+            </div>
           </div>
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
+      {% else %}
+      <p>No jobs match your filters.</p>
+      {% endif %}
     </div>
-    {% else %}
-    <p>No jobs match your filters.</p>
-    {% endif %}
+
+    <div id="map-panel" class="{% if not template_data.map_view %}d-none{% endif %}">
+      <div class="row g-3 align-items-end mb-2">
+        <div class="col-md-4">
+          <label class="form-label" for="distance-miles">Distance from your point</label>
+          <select id="distance-miles" class="form-control">
+            <option value="">Any</option>
+            <option value="5">5 miles</option>
+            <option value="10">10 miles</option>
+            <option value="25">25 miles</option>
+            <option value="50">50 miles</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <button type="button" id="clear-point" class="btn btn-outline-secondary">Clear my point</button>
+        </div>
+        <div class="col-md-4">
+          <p id="map-status" class="text-muted mb-2"></p>
+        </div>
+      </div>
+      {% if template_data.maps_api_key %}
+      <div id="job-map" class="border rounded" style="height: 480px;"></div>
+      {% else %}
+      <p>Set GOOGLE_MAPS_API_KEY to view jobs on the map.</p>
+      {% endif %}
+      <p class="text-muted mt-2">Click the map to mark where you are, then choose a distance. Jobs without a pinned office are not shown.</p>
+    </div>
   </div>
 </div>
+{{ template_data.map_jobs|json_script:"map-jobs-data" }}
+<script>
+  const mapJobs = JSON.parse(document.getElementById('map-jobs-data').textContent);
+  const mapsApiKey = '{{ template_data.maps_api_key|escapejs }}';
+  let jobMap = null;
+  let youMarker = null;
+  let jobMarkers = [];
+  let mapsScriptRequested = false;
+
+  function milesBetween(aLat, aLng, bLat, bLng) {
+    const toRad = (degrees) => degrees * Math.PI / 180;
+    const earthMiles = 3958.8;
+    const dLat = toRad(bLat - aLat);
+    const dLng = toRad(bLng - aLng);
+    const h = Math.sin(dLat / 2) ** 2
+      + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * earthMiles * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  function applyDistanceFilter() {
+    const miles = document.getElementById('distance-miles').value;
+    const status = document.getElementById('map-status');
+    const origin = youMarker ? youMarker.getPosition() : null;
+    let shown = 0;
+    jobMarkers.forEach(function (entry) {
+      let visible = true;
+      if (miles && origin) {
+        const distance = milesBetween(origin.lat(), origin.lng(), entry.job.lat, entry.job.lng);
+        visible = distance <= Number(miles);
+      }
+      entry.marker.setVisible(visible);
+      if (visible) {
+        shown += 1;
+      }
+    });
+    if (miles && !origin) {
+      status.textContent = 'Click the map to mark where you are. The distance filter applies after that.';
+    } else if (miles && origin) {
+      status.textContent = 'Showing ' + shown + ' job' + (shown === 1 ? '' : 's') + ' within ' + miles + ' miles.';
+    } else {
+      status.textContent = 'Showing ' + shown + ' pinned job' + (shown === 1 ? '' : 's') + '.';
+    }
+  }
+
+  function initJobSearchMap() {
+    if (jobMap) {
+      return;
+    }
+    const center = mapJobs.length
+      ? {lat: mapJobs[0].lat, lng: mapJobs[0].lng}
+      : {lat: 33.7756, lng: -84.3963};
+    jobMap = new google.maps.Map(document.getElementById('job-map'), {
+      center: center,
+      zoom: mapJobs.length ? 11 : 4,
+    });
+    jobMarkers = mapJobs.map(function (job) {
+      const marker = new google.maps.Marker({
+        map: jobMap,
+        position: {lat: job.lat, lng: job.lng},
+        title: job.title,
+      });
+      const info = new google.maps.InfoWindow();
+      marker.addListener('click', function () {
+        const wrap = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = job.title;
+        const location = document.createElement('div');
+        location.textContent = job.location;
+        const salary = document.createElement('div');
+        salary.textContent = job.salary;
+        const link = document.createElement('a');
+        link.href = job.url;
+        link.textContent = 'View job';
+        wrap.append(title, location, salary, link);
+        info.setContent(wrap);
+        info.open(jobMap, marker);
+      });
+      return {job: job, marker: marker};
+    });
+    if (jobMarkers.length > 1) {
+      const bounds = new google.maps.LatLngBounds();
+      jobMarkers.forEach(function (entry) {
+        bounds.extend(entry.marker.getPosition());
+      });
+      jobMap.fitBounds(bounds);
+    }
+    jobMap.addListener('click', function (event) {
+      const position = event.latLng;
+      if (!youMarker) {
+        youMarker = new google.maps.Marker({
+          map: jobMap,
+          position: position,
+          label: 'You',
+          zIndex: 999,
+        });
+      } else {
+        youMarker.setPosition(position);
+      }
+      applyDistanceFilter();
+    });
+    document.getElementById('distance-miles').addEventListener('change', applyDistanceFilter);
+    document.getElementById('clear-point').addEventListener('click', function () {
+      if (youMarker) {
+        youMarker.setMap(null);
+        youMarker = null;
+      }
+      applyDistanceFilter();
+    });
+    applyDistanceFilter();
+  }
+
+  function loadJobMap() {
+    if (!document.getElementById('job-map')) {
+      return;
+    }
+    if (window.google && window.google.maps) {
+      initJobSearchMap();
+      return;
+    }
+    if (mapsScriptRequested) {
+      return;
+    }
+    mapsScriptRequested = true;
+    const script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(mapsApiKey) + '&callback=initJobSearchMap';
+    script.async = true;
+    document.body.appendChild(script);
+  }
+
+  function setResultView(showMap) {
+    document.getElementById('job-list').classList.toggle('d-none', showMap);
+    document.getElementById('map-panel').classList.toggle('d-none', !showMap);
+    document.getElementById('search-view').value = showMap ? 'map' : '';
+    document.getElementById('list-view-btn').className = showMap ? 'btn btn-outline-dark' : 'btn bg-dark text-white';
+    document.getElementById('map-view-btn').className = showMap ? 'btn bg-dark text-white' : 'btn btn-outline-dark';
+    if (showMap) {
+      loadJobMap();
+    }
+  }
+
+  document.getElementById('list-view-btn').addEventListener('click', function () {
+    setResultView(false);
+  });
+  document.getElementById('map-view-btn').addEventListener('click', function () {
+    setResultView(true);
+  });
+  if (document.getElementById('search-view').value === 'map') {
+    loadJobMap();
+  }
+</script>
 {% endblock content %}

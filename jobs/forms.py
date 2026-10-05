@@ -10,6 +10,8 @@ class JobPostingForm(forms.ModelForm):
             'description',
             'skills_required',
             'location',
+            'latitude',
+            'longitude',
             'salary_min',
             'salary_max',
             'remote_onsite',
@@ -18,6 +20,8 @@ class JobPostingForm(forms.ModelForm):
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 6}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -38,6 +42,14 @@ class JobPostingForm(forms.ModelForm):
                     'salary_max',
                     'Maximum salary must be greater than or equal to minimum salary.'
                 )
+        latitude = cleaned_data.get('latitude')
+        longitude = cleaned_data.get('longitude')
+        if (latitude is None) != (longitude is None):
+            self.add_error('location', 'Click the map to pin the office, or leave the pin unset.')
+        if latitude is not None and not (-90 <= latitude <= 90):
+            self.add_error('location', 'That pin is outside the map.')
+        if longitude is not None and not (-180 <= longitude <= 180):
+            self.add_error('location', 'That pin is outside the map.')
         return cleaned_data
 
 

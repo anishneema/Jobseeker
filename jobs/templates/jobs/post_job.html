@@ -10,7 +10,26 @@
             <hr />
             <form method="POST">
               {% csrf_token %}
-              {{ template_data.form.as_p }}
+              {{ template_data.form.non_field_errors }}
+              {% for field in template_data.form.hidden_fields %}
+                {{ field }}
+              {% endfor %}
+              {% for field in template_data.form.visible_fields %}
+              <p>
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                {{ field.errors }}
+              </p>
+              {% if field.name == 'location' %}
+                {% if template_data.maps_api_key %}
+                <div id="office-map" class="border rounded mb-2" style="height: 360px;"></div>
+                <p class="text-muted">Click the map to pin this job's office. Leave it unset if there is no office.</p>
+                {% else %}
+                <p class="text-muted">Set GOOGLE_MAPS_API_KEY to pin an office on the map.</p>
+                {% endif %}
+              {% endif %}
+              {% endfor %}
               <button type="submit" class="btn bg-dark text-white">Save</button>
               <a class="btn btn-outline-secondary" href="{% url 'jobs.mine' %}">Cancel</a>
             </form>
@@ -20,4 +39,35 @@
     </div>
   </div>
 </div>
+{% if template_data.maps_api_key %}
+<script>
+  function initOfficeMap() {
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    const lat = parseFloat(latInput.value);
+    const lng = parseFloat(lngInput.value);
+    const hasPin = !Number.isNaN(lat) && !Number.isNaN(lng);
+    const center = hasPin ? {lat: lat, lng: lng} : {lat: 33.7756, lng: -84.3963};
+    const map = new google.maps.Map(document.getElementById('office-map'), {
+      center: center,
+      zoom: hasPin ? 13 : 11,
+    });
+    let marker = null;
+    if (hasPin) {
+      marker = new google.maps.Marker({map: map, position: center});
+    }
+    map.addListener('click', function (event) {
+      const position = event.latLng;
+      if (!marker) {
+        marker = new google.maps.Marker({map: map, position: position});
+      } else {
+        marker.setPosition(position);
+      }
+      latInput.value = position.lat().toFixed(6);
+      lngInput.value = position.lng().toFixed(6);
+    });
+  }
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ template_data.maps_api_key }}&callback=initOfficeMap"></script>
+{% endif %}
 {% endblock content %}

@@ -25,6 +25,12 @@ class JobPosting(models.Model):
         help_text='Comma-separated skills, e.g. Python, Django, SQL'
     )
     location = models.CharField(max_length=200)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
     salary_min = models.PositiveIntegerField()
     salary_max = models.PositiveIntegerField()
     remote_onsite = models.CharField(
