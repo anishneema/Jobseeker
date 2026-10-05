@@ -1,4 +1,5 @@
 from functools import wraps
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -7,6 +8,23 @@ from .models import JobPosting, Application, CartItem
 from .forms import JobPostingForm, ApplicationForm
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+
+
+def _map_payload(jobs):
+    payload = []
+    for job in jobs:
+        if job.latitude is None or job.longitude is None:
+            continue
+        payload.append({
+            'id': job.id,
+            'title': job.title,
+            'location': job.location,
+            'salary': job.salary_range(),
+            'lat': float(job.latitude),
+            'lng': float(job.longitude),
+            'url': reverse('jobs.show', args=[job.id]),
+        })
+    return payload
 
 
 def recruiter_required(view_func):
@@ -66,6 +84,9 @@ def index(request):
         template_data['cart_job_ids'] = set(CartItem.objects.filter(
             jobseeker=request.user
         ).values_list('job_id', flat=True))
+    template_data['map_jobs'] = _map_payload(jobs)
+    template_data['map_view'] = request.GET.get('view') == 'map'
+    template_data['maps_api_key'] = settings.GOOGLE_MAPS_API_KEY
 
     return render(request, 'jobs/job_list.html',
                   {'template_data': template_data})
@@ -118,6 +139,7 @@ def apply(request, id):
 def post(request):
     template_data = {}
     template_data['title'] = 'Post a Job'
+    template_data['maps_api_key'] = settings.GOOGLE_MAPS_API_KEY
     if request.method == 'GET':
         template_data['form'] = JobPostingForm()
         return render(request, 'jobs/post_job.html',
@@ -140,6 +162,7 @@ def edit(request, id):
     template_data = {}
     template_data['title'] = 'Edit Job'
     template_data['job'] = job
+    template_data['maps_api_key'] = settings.GOOGLE_MAPS_API_KEY
     if request.method == 'GET':
         template_data['form'] = JobPostingForm(instance=job)
         return render(request, 'jobs/post_job.html',

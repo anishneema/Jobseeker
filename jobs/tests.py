@@ -95,3 +95,65 @@ class ApplicationStatusTrackingTests(TestCase):
         for status, _ in Application.STATUS_CHOICES:
             application.status = status
             self.assertTrue(application.status_badge_class())
+
+
+class JobMapTests(TestCase):
+    def setUp(self):
+        self.recruiter = User.objects.create_user(username='maprecruiter', password='pw')
+        RecruiterProfile.objects.create(user=self.recruiter, company_name='Acme')
+
+    def _job_fields(self, **extra):
+        fields = {
+            'title': 'Campus Role',
+            'description': 'On campus.',
+            'skills_required': 'Python',
+            'location': 'Atlanta, GA',
+            'salary_min': '80000',
+            'salary_max': '100000',
+            'remote_onsite': 'on-site',
+            'status': 'open',
+            'latitude': '',
+            'longitude': '',
+        }
+        fields.update(extra)
+        return fields
+
+    def test_recruiter_can_pin_office(self):
+        self.client.login(username='maprecruiter', password='pw')
+        response = self.client.post(reverse('jobs.post'), self._job_fields(
+            latitude='33.775600',
+            longitude='-84.396300',
+        ))
+        job = JobPosting.objects.get(title='Campus Role')
+        self.assertRedirects(response, reverse('jobs.show', kwargs={'id': job.id}))
+        self.assertEqual(float(job.latitude), 33.7756)
+        self.assertEqual(float(job.longitude), -84.3963)
+
+    def test_map_payload_skips_jobs_without_a_pin(self):
+        JobPosting.objects.create(
+            recruiter=self.recruiter,
+            title='Pinned Role',
+            description='Has an office.',
+            skills_required='Python',
+            location='Atlanta, GA',
+            latitude='33.775600',
+            longitude='-84.396300',
+            salary_min=80000,
+            salary_max=100000,
+            remote_onsite='on-site',
+        )
+        JobPosting.objects.create(
+            recruiter=self.recruiter,
+            title='Unpinned Role',
+            description='No office pin.',
+            skills_required='Python',
+            location='Atlanta, GA',
+            salary_min=80000,
+            salary_max=100000,
+            remote_onsite='on-site',
+        )
+        response = self.client.get(reverse('jobs.index'), {'view': 'map'})
+        titles = [job['title'] for job in response.context['template_data']['map_jobs']]
+        self.assertEqual(titles, ['Pinned Role'])
+        self.assertContains(response, 'id="job-list" class="d-none"')
+        self.assertContains(response, 'id="map-panel" class=""')

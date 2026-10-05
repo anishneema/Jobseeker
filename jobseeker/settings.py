@@ -10,6 +10,21 @@ from django.contrib.messages import constants as message_constants
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _load_env_file():
+    env_file = BASE_DIR / '.env'
+    if not env_file.is_file():
+        return
+    for raw in env_file.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file()
+
 SECRET_KEY = 'django-insecure-+yr=xr8ii=mppy5!d)eg-v9_z6x43amrd6q6$g5@#za6gd&yd9'
 
 DEBUG = True
@@ -106,3 +121,6 @@ DEFAULT_FROM_EMAIL = 'noreply@jobseeker.com'
 MESSAGE_TAGS = {
     message_constants.ERROR: 'danger',
 }
+
+# JavaScript API key for the job map. Put GOOGLE_MAPS_API_KEY in .env (gitignored).
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
