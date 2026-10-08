@@ -9,7 +9,13 @@ from .models import JobPosting, Application, CartItem
 from .forms import JobPostingForm, ApplicationForm
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-
+import json
+import time
+import ssl
+import certifi
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from django.core.cache import cache
 
 def _map_payload(jobs):
     payload = []
@@ -437,3 +443,113 @@ def candidate_recommendations(request, id):
         'jobs/candidate_recommendations.html',
         {'template_data': template_data}
     )
+
+def geocode_location(location):
+    key = 'geocode_' + location.strip().lower().replace(' ', '_')
+
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+
+    params = urlencode({
+        'q': location,
+        'format': 'json',
+        'limit': 1,
+    })
+
+    request = Request(
+        'https://nominatim.openstreetmap.org/search?' + params,
+        headers={
+            'User-Agent': 'JobseekerClassProject/1.0 (contact: bmendoza31@gatech.edu)'
+        }
+    )
+
+    try:
+        time.sleep(1.1)
+
+        with urlopen(
+            request,
+            timeout=10,
+            context=ssl.create_default_context(
+                cafile=certifi.where()
+            )
+        ) as response:
+            results = json.load(response)
+
+        if not results:
+            return None
+
+        coordinates = {
+            'lat': float(results[0]['lat']),
+            'lng': float(results[0]['lon']),
+        }
+
+        cache.set(key, coordinates, timeout=None)
+        return coordinates
+
+    except (OSError, ValueError, KeyError, IndexError) as error:
+        print('Geocoding failed:', location, error)
+        return None
+
+@recruiter_required
+def applicant_map(request, id):
+    job = get_object_or_404(
+        JobPosting,
+        id=id,
+        recruiter=request.user
+    )
+
+    applications = Application.objects.filter(
+        job=job
+    ).select_related('applicant__jobseeker_profile')
+
+    locations = {}
+
+    for application in applications:
+        profile = application.applicant.jobseeker_profile
+        location = profile.location.strip()
+
+        if not location:
+            continue
+
+        key = ', '.join(
+            part.strip().lower()
+            for part in location.split(',')
+        )
+
+        if key not in locations:
+            locations[key] = {
+                'location': location,
+                'applicants': [],
+            }
+
+        locations[key]['applicants'].append({
+            'username': application.applicant.username,
+            'profile_url': reverse(
+                'accounts.profile_view',
+                args=[application.applicant.id]
+            ),
+        })
+
+    map_locations = []
+
+    for group in locations.values():
+        coordinates = geocode_location(group['location'])
+
+        if coordinates:
+            group.update(coordinates)
+            map_locations.append(group)
+
+    template_data = {
+        'title': 'Applicant Location Map',
+        'job': job,
+        'locations': map_locations,
+        'maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    }
+
+    return render(
+        request,
+        'jobs/applicant_map.html',
+        {'template_data': template_data}
+    )
+

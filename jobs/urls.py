@@ -17,5 +17,7 @@ urlpatterns = [
     path('<int:id>/apply/', views.apply, name='jobs.apply'),
     path('commute/save/', views.commute_save, name='jobs.commute_save'),
     path('<int:id>/recommend-candidates/',views.candidate_recommendations,name='jobs.candidate_recommendations'),
+    path('<int:id>/applicant-map/',views.applicant_map,name='jobs.applicant_map'),
+
 
 ]

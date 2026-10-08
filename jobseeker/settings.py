@@ -124,3 +124,11 @@ MESSAGE_TAGS = {
 
 # JavaScript API key for the job map. Put GOOGLE_MAPS_API_KEY in .env (gitignored).
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': BASE_DIR / 'map_cache',
+    }
+}
+
