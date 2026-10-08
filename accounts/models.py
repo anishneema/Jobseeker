@@ -45,3 +45,18 @@ class JobSeekerProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+class SavedCandidateSearch(models.Model):
+    recruiter = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='saved_candidate_searches'
+    )
+    skills = models.CharField(max_length=500, blank=True)
+    location = models.CharField(max_length=200, blank=True)
+    projects = models.CharField(max_length=500, blank=True)
+    seen_candidate_ids = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Saved search by {self.recruiter.username}'

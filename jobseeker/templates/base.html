@@ -27,6 +27,7 @@
             <a class="nav-link" href="{% url 'jobs.index' %}">Search Jobs</a>
             {% if is_recruiter %}
             <a class="nav-link" href="{% url 'accounts.candidate_search' %}">Search Candidates </a>
+            <a class="nav-link" href="{% url 'accounts.saved_searches' %}">Saved Searches</a>
             <a class="nav-link" href="{% url 'jobs.post' %}">Post a Job</a>
             <a class="nav-link" href="{% url 'jobs.mine' %}">My Jobs</a>
             {% elif is_seeker %}
