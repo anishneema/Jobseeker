@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from accounts.views import jobseeker_required
+from accounts.models import JobSeekerProfile
 from .models import JobPosting, Application, CartItem
 from .forms import JobPostingForm, ApplicationForm
 from django.urls import reverse
@@ -375,3 +376,64 @@ def commute_save(request):
     profile.save()
     messages.success(request, f'Saved: only showing jobs within {miles} miles on the map.')
     return redirect(_safe_next(request, fallback))
+
+@recruiter_required
+def candidate_recommendations(request, id):
+    job = get_object_or_404(
+        JobPosting,
+        id=id,
+        recruiter=request.user
+    )
+
+    required_skills = {
+        skill.strip().lower()
+        for skill in job.skills_required.split(',')
+        if skill.strip()
+    }
+
+    candidates = JobSeekerProfile.objects.filter(
+        show_skills=True
+    ).select_related('user')
+
+    recommendations = []
+
+    for candidate in candidates:
+        candidate_skills = {
+            skill.strip().lower()
+            for skill in candidate.skills.split(',')
+            if skill.strip()
+        }
+
+        matching_skills = required_skills.intersection(
+            candidate_skills
+        )
+
+        if matching_skills:
+            match_percentage = (
+                len(matching_skills) / len(required_skills)
+            ) * 100
+
+            recommendations.append({
+                'candidate': candidate,
+                'matching_skills': ', '.join(
+                    sorted(matching_skills)
+                ),
+                'match_percentage': round(match_percentage),
+            })
+
+    recommendations.sort(
+        key=lambda item: item['match_percentage'],
+        reverse=True
+    )
+
+    template_data = {
+        'title': 'Candidate Recommendations',
+        'job': job,
+        'recommendations': recommendations,
+    }
+
+    return render(
+        request,
+        'jobs/candidate_recommendations.html',
+        {'template_data': template_data}
+    )
