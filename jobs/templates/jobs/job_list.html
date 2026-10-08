@@ -117,6 +117,20 @@
           <p id="map-status" class="text-muted mb-2"></p>
         </div>
       </div>
+      {% if is_seeker %}
+      <form method="POST" action="{% url 'jobs.commute_save' %}" id="commute-form" class="mb-2">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'jobs.index' %}?view=map">
+        <input type="hidden" name="miles" id="commute-miles">
+        <input type="hidden" name="lat" id="commute-lat">
+        <input type="hidden" name="lng" id="commute-lng">
+        <button type="submit" class="btn bg-dark text-white">Save as my commute preference</button>
+        {% if template_data.commute %}
+        <button type="submit" name="clear" value="1" class="btn btn-outline-danger">Clear saved preference</button>
+        <span class="text-muted ms-2">Saved: {{ template_data.commute.miles }} miles</span>
+        {% endif %}
+      </form>
+      {% endif %}
       {% if template_data.maps_api_key %}
       <div id="job-map" class="border rounded" style="height: 480px;"></div>
       {% else %}
@@ -127,8 +141,13 @@
   </div>
 </div>
 {{ template_data.map_jobs|json_script:"map-jobs-data" }}
+{{ template_data.commute|json_script:"commute-data" }}
 <script>
   const mapJobs = JSON.parse(document.getElementById('map-jobs-data').textContent);
+  const savedCommute = JSON.parse(document.getElementById('commute-data').textContent);
+  if (savedCommute) {
+    document.getElementById('distance-miles').value = String(savedCommute.miles);
+  }
   const mapsApiKey = '{{ template_data.maps_api_key|escapejs }}';
   let jobMap = null;
   let youMarker = null;
@@ -205,7 +224,17 @@
       });
       return {job: job, marker: marker};
     });
-    if (jobMarkers.length > 1) {
+    if (savedCommute) {
+      const home = {lat: savedCommute.lat, lng: savedCommute.lng};
+      youMarker = new google.maps.Marker({
+        map: jobMap,
+        position: home,
+        label: 'You',
+        zIndex: 999,
+      });
+      jobMap.setCenter(home);
+      jobMap.setZoom(10);
+    } else if (jobMarkers.length > 1) {
       const bounds = new google.maps.LatLngBounds();
       jobMarkers.forEach(function (entry) {
         bounds.extend(entry.marker.getPosition());
@@ -235,6 +264,17 @@
       applyDistanceFilter();
     });
     applyDistanceFilter();
+  }
+
+  const commuteForm = document.getElementById('commute-form');
+  if (commuteForm) {
+    commuteForm.addEventListener('submit', function () {
+      document.getElementById('commute-miles').value = document.getElementById('distance-miles').value;
+      if (youMarker) {
+        document.getElementById('commute-lat').value = youMarker.getPosition().lat();
+        document.getElementById('commute-lng').value = youMarker.getPosition().lng();
+      }
+    });
   }
 
   function loadJobMap() {
