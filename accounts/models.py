@@ -34,6 +34,14 @@ class JobSeekerProfile(models.Model):
     show_education = models.BooleanField(default=True)
     show_work_experience = models.BooleanField(default=True)
     show_links = models.BooleanField(default=True)
+    
+    commute_radius_miles = models.PositiveSmallIntegerField(null=True, blank=True)
+    home_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    home_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
 
     def __str__(self):
         return self.user.username

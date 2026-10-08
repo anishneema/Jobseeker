@@ -26,6 +26,22 @@ def _map_payload(jobs):
         })
     return payload
 
+COMMUTE_RADIUS_CHOICES = (5, 10, 25, 50)
+
+
+def _saved_commute(user):
+    if not (user.is_authenticated and hasattr(user, 'jobseeker_profile')):
+        return None
+    profile = user.jobseeker_profile
+    if (profile.commute_radius_miles is None
+            or profile.home_latitude is None
+            or profile.home_longitude is None):
+        return None
+    return {
+        'miles': profile.commute_radius_miles,
+        'lat': float(profile.home_latitude),
+        'lng': float(profile.home_longitude),
+    }
 
 def recruiter_required(view_func):
     @wraps(view_func)
@@ -85,6 +101,7 @@ def index(request):
             jobseeker=request.user
         ).values_list('job_id', flat=True))
     template_data['map_jobs'] = _map_payload(jobs)
+    template_data['commute'] = _saved_commute(request.user)
     template_data['map_view'] = request.GET.get('view') == 'map'
     template_data['maps_api_key'] = settings.GOOGLE_MAPS_API_KEY
 
@@ -324,3 +341,37 @@ def cart_remove(request, id):
         item.delete()
         messages.success(request, 'Removed from your cart.')
     return redirect(_safe_next(request, reverse('jobs.cart')))
+
+@jobseeker_required
+def commute_save(request):
+    fallback = reverse('jobs.index') + '?view=map'
+    if request.method != 'POST':
+        return redirect(fallback)
+    profile = request.user.jobseeker_profile
+    if request.POST.get('clear'):
+        profile.commute_radius_miles = None
+        profile.home_latitude = None
+        profile.home_longitude = None
+        profile.save()
+        messages.success(request, 'Commute preference cleared.')
+        return redirect(_safe_next(request, fallback))
+    try:
+        miles = int(request.POST.get('miles', ''))
+        lat = float(request.POST.get('lat', ''))
+        lng = float(request.POST.get('lng', ''))
+    except ValueError:
+        miles = lat = lng = None
+    if (miles not in COMMUTE_RADIUS_CHOICES
+            or lat is None or not (-90 <= lat <= 90)
+            or not (-180 <= lng <= 180)):
+        messages.error(
+            request,
+            'Click the map to mark where you are and choose a distance before saving.'
+        )
+        return redirect(_safe_next(request, fallback))
+    profile.commute_radius_miles = miles
+    profile.home_latitude = round(lat, 6)
+    profile.home_longitude = round(lng, 6)
+    profile.save()
+    messages.success(request, f'Saved: only showing jobs within {miles} miles on the map.')
+    return redirect(_safe_next(request, fallback))

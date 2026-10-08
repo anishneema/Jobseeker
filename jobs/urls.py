@@ -15,5 +15,5 @@ urlpatterns = [
     path('<int:id>/', views.show, name='jobs.show'),
     path('<int:id>/edit/', views.edit, name='jobs.edit'),
     path('<int:id>/apply/', views.apply, name='jobs.apply'),
-    
+    path('commute/save/', views.commute_save, name='jobs.commute_save'),
 ]
