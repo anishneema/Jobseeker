@@ -16,6 +16,7 @@ import certifi
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from django.core.cache import cache
+import os
 
 def _map_payload(jobs):
     payload = []
@@ -460,7 +461,7 @@ def geocode_location(location):
     request = Request(
         'https://nominatim.openstreetmap.org/search?' + params,
         headers={
-            'User-Agent': 'JobseekerClassProject/1.0 (contact: bmendoza31@gatech.edu)'
+            'User-Agent': 'JobseekerClassProject/1.0'f'(contact: {os.environ["NOMINATIM_CONTACT_EMAIL"]})'
         }
     )
 
