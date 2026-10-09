@@ -117,10 +117,11 @@ def get_matching_candidates(skills='', location='', projects=''):
 def candidate_search(request):
     if not hasattr(request.user, 'recruiter_profile'):
         return redirect('home.index')
-    candidates = get_matching_candidates(skills, location, projects)
+    
     skills = request.GET.get('skills', '').strip()
     location = request.GET.get('location', '').strip()
     projects = request.GET.get('projects', '').strip()
+    candidates = get_matching_candidates(skills, location, projects)
     if skills:
         candidates = candidates.filter(skills__icontains=skills)
     if location:
