@@ -1,0 +1,134 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3">
+  <div class="container">
+
+    <h2>Applicant Location Map</h2>
+    <h5 class="text-muted">{{ template_data.job.title }}</h5>
+    <hr />
+
+    <div id="map" style="height: 500px; width: 100%;"></div>
+    <small>
+    Location data ©
+    <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
+    </small>
+    {% if not template_data.locations %}
+      <p class="mt-3">
+        No applicants with locations available.
+      </p>
+    {% endif %}
+
+  </div>
+</div>
+
+{{ template_data.locations|json_script:"applicant-locations" }}
+
+<script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+
+<script>
+
+function initMap() {
+    const map = new google.maps.Map(
+        document.getElementById("map"),
+        {
+            zoom: 4,
+            center: { lat: 39.5, lng: -98.35 }
+        }
+    );
+
+    const locations = JSON.parse(
+        document.getElementById("applicant-locations").textContent
+    );
+
+    const bounds = new google.maps.LatLngBounds();
+    const markers = [];
+
+    locations.forEach(function(group) {
+        const position = {
+            lat: group.lat,
+            lng: group.lng
+        };
+
+        const marker = new google.maps.Marker({
+            position: position,
+            title: group.location
+        });
+
+        const content = document.createElement("div");
+
+        const heading = document.createElement("h6");
+        heading.textContent = group.location;
+        content.appendChild(heading);
+
+        const count = document.createElement("p");
+        count.textContent = group.applicants.length + " applicant(s)";
+        content.appendChild(count);
+
+        group.applicants.forEach(function(applicant) {
+            const link = document.createElement("a");
+            link.href = applicant.profile_url;
+            link.textContent = applicant.username;
+
+            content.appendChild(link);
+            content.appendChild(document.createElement("br"));
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+            content: content
+        });
+
+        marker.addListener("click", function() {
+            infoWindow.open({
+                anchor: marker,
+                map: map
+            });
+        });
+
+        markers.push(marker);
+        bounds.extend(position);
+    });
+
+    new markerClusterer.MarkerClusterer({
+        map: map,
+        markers: markers,
+        onClusterClick: function(event, cluster, map) {
+            const bounds = cluster.bounds;
+
+            if (bounds) {
+                map.fitBounds(bounds);
+
+                google.maps.event.addListenerOnce(
+                    map,
+                    "idle",
+                    function() {
+                        if (map.getZoom() > 12) {
+                            map.setZoom(12);
+                        }
+                    }
+                );
+            }
+        }
+    });
+    if (markers.length > 0) {
+        map.fitBounds(bounds);
+
+        if (markers.length === 1) {
+            map.setZoom(10);
+        }
+    }
+}
+</script>
+
+{% if template_data.maps_api_key %}
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key={{ template_data.maps_api_key|urlencode }}&callback=initMap">
+</script>
+{% else %}
+<p class="text-danger mt-3">
+  Google Maps API key is not configured.
+</p>
+{% endif %}
+
+{% endblock %}

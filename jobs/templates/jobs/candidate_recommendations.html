@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3">
+  <div class="container">
+
+    <h2>Candidate Recommendations</h2>
+    <h5 class="text-muted">{{ template_data.job.title }}</h5>
+    <hr />
+
+    <p>
+      <strong>Required Skills:</strong>
+      {{ template_data.job.skills_required }}
+    </p>
+
+    {% for item in template_data.recommendations %}
+      <div class="card shadow-sm p-3 mb-3">
+
+        <h5>{{ item.candidate.user.username }}</h5>
+
+        <p>
+          <strong>Candidate Skills:</strong>
+          {{ item.candidate.skills }}
+        </p>
+
+        <p>
+          <strong>Matching Skills:</strong>
+          {{ item.matching_skills }}
+        </p>
+
+        <p>
+          <strong>Location:</strong>
+          {{ item.candidate.location }}
+        </p>
+
+        <p>
+          <strong>Skill Match:</strong>
+          {{ item.match_percentage }}%
+        </p>
+
+        <a class="btn btn-outline-dark"
+           href="{% url 'accounts.profile_view' user_id=item.candidate.user.id %}">
+          View Candidate Profile
+        </a>
+
+      </div>
+
+    {% empty %}
+      <p>
+        No candidates currently match
+        this job's required skills.
+      </p>
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}

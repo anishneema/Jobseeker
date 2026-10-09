@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-3">
+  <div class="container">
+
+    <h2>My Saved Candidate Searches</h2>
+    <hr />
+
+    {% for search in template_data.searches %}
+      <div class="card shadow-sm p-3 mb-3">
+
+        <h5>Saved Search {{ forloop.counter }}</h5>
+
+        <p>
+          <strong>Skills:</strong>
+          {{ search.skills|default:"Any" }}
+        </p>
+
+        <p>
+          <strong>Location:</strong>
+          {{ search.location|default:"Any" }}
+        </p>
+
+        <p>
+          <strong>Projects:</strong>
+          {{ search.projects|default:"Any" }}
+        </p>
+
+        {% if search.new_count > 0 %}
+          <div class="alert alert-info">
+            {{ search.new_count }} new matching
+            candidate(s) found!
+          </div>
+
+          <h6>New Candidates</h6>
+
+          {% for candidate in search.new_candidates %}
+            <p>
+              <a href="{% url 'accounts.profile_view' user_id=candidate.user.id %}">
+                {{ candidate.user.username }}
+              </a>
+            </p>
+          {% endfor %}
+
+          <form method="POST"
+                action="{% url 'accounts.mark_search_seen' search_id=search.id %}">
+            {% csrf_token %}
+
+            <button type="submit"
+                    class="btn btn-sm btn-dark">
+              Mark as Seen
+            </button>
+          </form>
+
+        {% else %}
+          <p class="text-muted">No new matches.</p>
+        {% endif %}
+
+      </div>
+
+    {% empty %}
+      <p>You have no saved searches yet.</p>
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}

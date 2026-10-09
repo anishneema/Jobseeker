@@ -39,6 +39,29 @@
 
     </form>
 
+    <div class="mb-4">
+      <form method="POST"
+            action="{% url 'accounts.save_candidate_search' %}">
+        {% csrf_token %}
+
+        <input type="hidden" name="skills"
+              value="{{ template_data.skills }}">
+        <input type="hidden" name="location"
+              value="{{ template_data.location }}">
+        <input type="hidden" name="projects"
+              value="{{ template_data.projects }}">
+
+        <button type="submit" class="btn btn-dark">
+          Save This Search
+        </button>
+
+        <a href="{% url 'accounts.saved_searches' %}"
+          class="btn btn-outline-dark">
+          My Saved Searches
+        </a>
+      </form>
+    </div>
+
     {% for candidate in template_data.candidates %}
 
       <div class="card shadow-sm p-3 mb-3">

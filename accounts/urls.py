@@ -9,4 +9,8 @@ urlpatterns = [
     path('profile/<int:user_id>/', views.profile_view, name='accounts.profile_view'),
     path('candidates/',views.candidate_search,name='accounts.candidate_search'),
     path('candidates/<int:user_id>/email/', views.email_candidate, name='accounts.email_candidate'),
+    path('candidates/save/', views.save_candidate_search,name='accounts.save_candidate_search'),
+    path('candidates/saved/', views.saved_searches, name='accounts.saved_searches'),
+    path('candidates/saved/<int:search_id>/seen/',views.mark_search_seen,name='accounts.mark_search_seen'),
+
 ]
