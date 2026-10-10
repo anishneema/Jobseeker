@@ -1,5 +1,6 @@
 from functools import wraps
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -269,6 +270,57 @@ def job_applications(request, id):
         'jobs/job_applications.html',
         {'template_data': template_data}
     )
+
+@recruiter_required
+def pipeline(request, id):
+    job = get_object_or_404(JobPosting, id=id, recruiter=request.user)
+    applications = list(
+        Application.objects.filter(job=job).select_related('applicant')
+    )
+    columns = [
+        {
+            'key': key,
+            'label': label,
+            'applications': [a for a in applications if a.status == key],
+        }
+        for key, label in Application.STATUS_CHOICES
+    ]
+    template_data = {
+        'title': f'{job.title} - Pipeline',
+        'job': job,
+        'columns': columns,
+        'total': len(applications),
+    }
+    return render(request, 'jobs/pipeline.html',
+                  {'template_data': template_data})
+
+
+@recruiter_required
+def application_move(request, id):
+    application = get_object_or_404(
+        Application, id=id, job__recruiter=request.user
+    )
+    board = redirect('jobs.pipeline', id=application.job_id)
+    if request.method != 'POST':
+        return board
+    stages = dict(Application.STATUS_CHOICES)
+    status = request.POST.get('status')
+    wants_json = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if status not in stages:
+        if wants_json:
+            return JsonResponse({'error': 'Invalid stage.'}, status=400)
+        messages.error(request, 'That is not a valid stage.')
+        return board
+    application.status = status
+    application.save(update_fields=['status'])
+    if wants_json:
+        return JsonResponse({'status': status, 'label': stages[status]})
+    messages.success(
+        request,
+        f'Moved {application.applicant.username} to {stages[status]}.'
+    )
+    return board
+
 
 def _safe_next(request, fallback):
     next_url = request.POST.get('next') or request.GET.get('next')
