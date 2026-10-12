@@ -30,6 +30,9 @@
         <p>{{ template_data.profile.links|urlize|linebreaksbr }}</p>
         {% endif %}
 
+        {% if not template_data.is_owner %}
+        <a class="btn btn-outline-danger" href="{% url 'jobs.report_content' kind='user' id=template_data.profile.user.id %}">Report user</a>
+        {% endif %}
         {% if template_data.is_owner %}
         <a class="btn bg-dark text-white" href="{% url 'accounts.profile_edit' %}">Edit profile</a>
         {% endif %}

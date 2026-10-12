@@ -44,6 +44,7 @@ class JobPosting(models.Model):
         default='open'
     )
     date_posted = models.DateTimeField(auto_now_add=True)
+    is_removed = models.BooleanField(default=False, help_text='Hidden by an administrator; recruiters cannot restore this posting.')
 
     class Meta:
         ordering = ['-date_posted']
@@ -126,3 +127,28 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f'{self.jobseeker.username} -> {self.job.title} (cart)'
+
+
+class ContentReport(models.Model):
+    REASON_CHOICES = [('spam', 'Spam'), ('misleading', 'Misleading content'),
+                      ('abuse', 'Abuse or harassment'), ('other', 'Other')]
+    STATUS_CHOICES = [('pending', 'Pending'), ('investigating', 'Investigating'),
+                      ('resolved', 'Resolved'), ('dismissed', 'Dismissed')]
+    reporter = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='submitted_reports')
+    job = models.ForeignKey(JobPosting, null=True, blank=True, on_delete=models.SET_NULL, related_name='reports')
+    reported_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='received_reports')
+    target_label = models.CharField(max_length=255)
+    content_snapshot = models.TextField(blank=True)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    details = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    review_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_reports')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.target_label}: {self.get_reason_display()}'
