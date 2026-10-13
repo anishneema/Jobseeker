@@ -99,6 +99,13 @@
           Email
         </a>
 
+        <a
+          class="btn btn-outline-dark"
+          href="{% url 'messaging.compose' user_id=candidate.user.id %}"
+        >
+          Message
+        </a>
+
       </div>
 
     {% empty %}

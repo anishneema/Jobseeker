@@ -157,3 +157,40 @@ class JobMapTests(TestCase):
         self.assertEqual(titles, ['Pinned Role'])
         self.assertContains(response, 'id="job-list" class="d-none"')
         self.assertContains(response, 'id="map-panel" class=""')
+
+
+class PipelineBoardTests(TestCase):
+    def test_recruiter_moves_applicant_and_only_they_can(self):
+        recruiter = User.objects.create_user(username='pipeboss', password='pw')
+        RecruiterProfile.objects.create(user=recruiter, company_name='Acme')
+        rival = User.objects.create_user(username='pipeother', password='pw')
+        RecruiterProfile.objects.create(user=rival, company_name='Rival')
+        seeker = User.objects.create_user(username='pipeseeker', password='pw')
+        JobSeekerProfile.objects.create(user=seeker)
+        job = JobPosting.objects.create(
+            recruiter=recruiter,
+            title='Pipeline Role',
+            description='Hiring.',
+            skills_required='Python',
+            location='Remote',
+            salary_min=90000,
+            salary_max=120000,
+            remote_onsite='remote',
+        )
+        application = Application.objects.create(job=job, applicant=seeker)
+        move_url = reverse('jobs.application_move', kwargs={'id': application.id})
+        board_url = reverse('jobs.pipeline', kwargs={'id': job.id})
+
+        self.client.login(username='pipeother', password='pw')
+        self.assertEqual(self.client.post(move_url, {'status': 'offer'}).status_code, 404)
+        self.client.logout()
+
+        self.client.login(username='pipeboss', password='pw')
+        self.assertContains(self.client.get(board_url), 'pipeseeker')
+        self.assertRedirects(self.client.post(move_url, {'status': 'offer'}), board_url)
+        application.refresh_from_db()
+        self.assertEqual(application.status, 'offer')
+        self.client.logout()
+
+        self.client.login(username='pipeseeker', password='pw')
+        self.assertContains(self.client.get(reverse('jobs.my_applications')), 'Offer')
