@@ -30,11 +30,13 @@
             <a class="nav-link" href="{% url 'accounts.saved_searches' %}">Saved Searches</a>
             <a class="nav-link" href="{% url 'jobs.post' %}">Post a Job</a>
             <a class="nav-link" href="{% url 'jobs.mine' %}">My Jobs</a>
+            <a class="nav-link" href="{% url 'messaging.inbox' %}">Messages</a>
             {% elif is_seeker %}
             <a class="nav-link" href="{% url 'accounts.profile_edit' %}">My Profile</a>
             <a class="nav-link" href="{% url 'jobs.my_applications' %}">My Applications</a>
             <a class="nav-link" href="{% url 'jobs.recommendations' %}">Recommended</a>
             <a class="nav-link" href="{% url 'jobs.cart' %}">My Cart</a>
+            <a class="nav-link" href="{% url 'messaging.inbox' %}">Inbox{% if unread_message_count %} <span class="badge text-bg-primary">{{ unread_message_count }}</span>{% endif %}</a>
             {% endif %}
             <div class="vr bg-white mx-2 d-none d-lg-block"></div>
             {% if user.is_authenticated %}

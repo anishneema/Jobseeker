@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <h2>New Message</h2>
+    <hr />
+    <form method="POST" class="card shadow p-3 mb-4">
+      {% csrf_token %}
+      <label>To</label>
+      <input type="text" class="form-control mb-3"
+             value="{{ template_data.recipient.username }}" disabled>
+      <label for="{{ template_data.form.body.id_for_label }}">Message</label>
+      {{ template_data.form.body.errors }}
+      <div class="mb-3">{{ template_data.form.body }}</div>
+      <div>
+        <a class="btn btn-outline-dark" href="{% url 'messaging.inbox' %}">Cancel</a>
+        <button class="btn bg-dark text-white" type="submit">Send</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}

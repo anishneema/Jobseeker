@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .pipeline-col { flex: 1 1 0; min-width: 210px; }
+  .pipeline-cards { min-height: 120px; border: 2px dashed transparent; border-radius: 0.5rem; padding: 0.25rem; }
+  .pipeline-over .pipeline-cards { border-color: #6c757d; background: #f8f9fa; }
+  .pipeline-card { cursor: grab; }
+</style>
+<div class="p-3">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h2 class="mb-0">Pipeline: {{ template_data.job.title }}</h2>
+      <div>
+        <a class="btn btn-sm btn-outline-dark" href="{% url 'jobs.job_applications' id=template_data.job.id %}">List view</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'jobs.mine' %}">Back to My Jobs</a>
+      </div>
+    </div>
+    <hr />
+    {% if not template_data.total %}
+    <p>No applications yet. Candidates will show up in Applied once they apply.</p>
+    {% else %}
+    <p class="text-muted">Drag a card to another stage, or use the dropdown on the card.</p>
+    {% endif %}
+    <div id="board-alert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div id="board" class="d-flex gap-3 overflow-auto pb-3">
+      {% csrf_token %}
+      {% for column in template_data.columns %}
+      <div class="pipeline-col" data-status="{{ column.key }}">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <strong>{{ column.label }}</strong>
+          <span class="badge text-bg-secondary pipeline-count">{{ column.applications|length }}</span>
+        </div>
+        <div class="pipeline-cards">
+          {% for application in column.applications %}
+          <div class="card shadow-sm mb-2 pipeline-card" draggable="true"
+               data-id="{{ application.id }}"
+               data-move-url="{% url 'jobs.application_move' id=application.id %}">
+            <div class="card-body p-2">
+              <a class="text-decoration-none" href="{% url 'jobs.application_detail' id=application.id %}">
+                <strong>{{ application.applicant.username }}</strong>
+              </a>
+              <div class="text-muted small">Applied {{ application.date_applied|date:"M j, Y" }}</div>
+              {% if application.note %}
+              <div class="small mt-1">{{ application.note|truncatechars:70 }}</div>
+              {% endif %}
+              <form method="POST" action="{% url 'jobs.application_move' id=application.id %}" class="d-flex gap-1 mt-2">
+                {% csrf_token %}
+                <select name="status" class="form-select form-select-sm"
+                        aria-label="Stage for {{ application.applicant.username }}">
+                  {% for stage in template_data.columns %}
+                  <option value="{{ stage.key }}" {% if stage.key == application.status %}selected{% endif %}>{{ stage.label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-dark">Move</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var board = document.getElementById('board');
+  if (!board || !window.fetch) return;
+  var token = board.querySelector('[name=csrfmiddlewaretoken]').value;
+  var alertBox = document.getElementById('board-alert');
+  var dragged = null;
+
+  function columnOf(el) { return el.closest('.pipeline-col'); }
+
+  function clearHighlight() {
+    board.querySelectorAll('.pipeline-over').forEach(function (c) {
+      c.classList.remove('pipeline-over');
+    });
+  }
+
+  function refreshCounts() {
+    board.querySelectorAll('.pipeline-col').forEach(function (col) {
+      col.querySelector('.pipeline-count').textContent =
+        col.querySelectorAll('.pipeline-card').length;
+    });
+  }
+
+  function showError(message) {
+    alertBox.textContent = message;
+    alertBox.classList.remove('d-none');
+  }
+
+  function moveCard(card, col) {
+    if (columnOf(card) === col) return;
+    var body = new FormData();
+    body.append('status', col.dataset.status);
+    fetch(card.dataset.moveUrl, {
+      method: 'POST',
+      body: body,
+      headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Could not move that application.');
+      alertBox.classList.add('d-none');
+      col.querySelector('.pipeline-cards').appendChild(card);
+      card.querySelector('select').value = col.dataset.status;
+      refreshCounts();
+    }).catch(function () {
+      showError('Could not move that application. Reload the page and try again.');
+    });
+  }
+
+  board.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.pipeline-card');
+    if (!card) return;
+    dragged = card;
+    card.classList.add('opacity-50');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.dataset.id);
+  });
+
+  board.addEventListener('dragend', function () {
+    if (dragged) dragged.classList.remove('opacity-50');
+    dragged = null;
+    clearHighlight();
+  });
+
+  board.addEventListener('dragover', function (e) {
+    var col = columnOf(e.target);
+    if (!col || !dragged) return;
+    e.preventDefault();
+    clearHighlight();
+    col.classList.add('pipeline-over');
+  });
+
+  board.addEventListener('drop', function (e) {
+    var col = columnOf(e.target);
+    if (!col || !dragged) return;
+    e.preventDefault();
+    clearHighlight();
+    moveCard(dragged, col);
+  });
+})();
+</script>
+{% endblock content %}

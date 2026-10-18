@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <h2>{{ template_data.title }}</h2>
+    <hr />
+    {% if template_data.message_list %}
+    <div class="list-group">
+      {% for message in template_data.message_list %}
+      <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+         href="{% url 'messaging.detail' id=message.id %}">
+        <div>
+          {% if template_data.mode == 'received' %}
+          <strong>{{ message.sender_label }}</strong>
+          {% if not message.is_read %}<span class="badge text-bg-primary ms-2">New</span>{% endif %}
+          {% else %}
+          <strong>To {{ message.recipient.username }}</strong>
+          {% endif %}
+          <div class="text-muted">{{ message.body|truncatechars:80 }}</div>
+        </div>
+        <small class="text-muted">{{ message.created_at|date:"M j, Y" }}</small>
+      </a>
+      {% endfor %}
+    </div>
+    {% elif template_data.mode == 'received' %}
+    <p>No messages yet. When a recruiter contacts you, it will show up here.</p>
+    {% else %}
+    <p>You have not sent any messages yet. Use the Message button on a candidate to start one.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}
