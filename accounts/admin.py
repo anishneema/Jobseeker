@@ -2,11 +2,13 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from .models import RecruiterProfile, JobSeekerProfile
+from jobs.admin_exports import csv_export
 
 class CustomUserAdmin(UserAdmin):
     list_display = UserAdmin.list_display + ('role', 'is_active')
     actions = ['make_job_seeker', 'make_recruiter',
-               'deactivate_users', 'activate_users']
+               'deactivate_users', 'activate_users', 'export_csv']
+    export_csv = csv_export('users', ('id', 'username', 'date_joined', 'last_login', 'is_active', 'is_staff'))
 
     def role(self, user):
         if hasattr(user, 'recruiter_profile'):

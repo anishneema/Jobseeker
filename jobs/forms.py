@@ -1,5 +1,5 @@
 from django import forms
-from .models import JobPosting, Application
+from .models import JobPosting, Application, ContentReport
 
 
 class JobPostingForm(forms.ModelForm):
@@ -68,3 +68,16 @@ class ApplicationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['note'].required = False
         self.fields['note'].widget.attrs.update({'class': 'form-control'})
+
+
+class ContentReportForm(forms.ModelForm):
+    class Meta:
+        model = ContentReport
+        fields = ['reason', 'details']
+        widgets = {'details': forms.Textarea(attrs={'rows': 5, 'maxlength': 5000})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['details'].max_length = 5000
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'

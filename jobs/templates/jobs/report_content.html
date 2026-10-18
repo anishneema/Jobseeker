@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4"><div class="card shadow p-4">
+  <h2>Report content</h2>
+  <p>{{ template_data.target_label }}</p>
+  <p class="text-muted">Describe the concern so an administrator can investigate before taking action.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ template_data.form.as_p }}
+    <button class="btn btn-dark" type="submit">Submit report</button>
+    <a class="btn btn-outline-secondary" href="{% url 'jobs.index' %}">Cancel</a>
+  </form>
+</div></div>
+{% endblock %}

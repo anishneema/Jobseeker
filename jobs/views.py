@@ -64,7 +64,7 @@ def recruiter_required(view_func):
 
 
 def index(request):
-    jobs = JobPosting.objects.filter(status='open')
+    jobs = JobPosting.objects.filter(status='open', is_removed=False)
     title = request.GET.get('title', '').strip()
     skills = request.GET.get('skills', '').strip()
     location = request.GET.get('location', '').strip()
@@ -119,7 +119,7 @@ def index(request):
 
 
 def show(request, id):
-    job = get_object_or_404(JobPosting, id=id)
+    job = get_object_or_404(JobPosting, id=id, is_removed=False)
     template_data = {}
     template_data['title'] = job.title
     template_data['job'] = job
@@ -140,7 +140,7 @@ def show(request, id):
 
 @jobseeker_required
 def apply(request, id):
-    job = get_object_or_404(JobPosting, id=id)
+    job = get_object_or_404(JobPosting, id=id, is_removed=False)
     if request.method != 'POST':
         return redirect('jobs.show', id=job.id)
     if job.status != 'open':
@@ -343,7 +343,7 @@ def recommendations(request):
     scored_jobs = []
     if candidate_skills:
         open_jobs = JobPosting.objects.filter(
-            status='open'
+            status='open', is_removed=False
         ).exclude(id__in=applied_job_ids)
         for job in open_jobs:
             job_skills = {
@@ -370,7 +370,7 @@ def recommendations(request):
 @jobseeker_required
 def cart(request):
     items = CartItem.objects.filter(
-        jobseeker=request.user
+        jobseeker=request.user, job__is_removed=False
     ).select_related('job', 'job__recruiter')
     applied_job_ids = set(Application.objects.filter(
         applicant=request.user
@@ -386,7 +386,7 @@ def cart(request):
 
 @jobseeker_required
 def cart_add(request, id):
-    job = get_object_or_404(JobPosting, id=id)
+    job = get_object_or_404(JobPosting, id=id, is_removed=False)
     if request.method != 'POST':
         return redirect('jobs.show', id=job.id)
     CartItem.objects.get_or_create(jobseeker=request.user, job=job)
@@ -606,3 +606,42 @@ def applicant_map(request, id):
         {'template_data': template_data}
     )
 
+
+
+@login_required
+def report_content(request, kind, id):
+    from django.contrib.auth.models import User
+    from django.http import Http404
+    from .forms import ContentReportForm
+    if kind == 'job':
+        target = get_object_or_404(JobPosting, id=id, is_removed=False)
+        label = f'Job #{target.pk}: {target.title}'
+        snapshot = f'{target.title}\n{target.description}\nPosted by {target.recruiter.username}'
+    elif kind == 'user':
+        target = get_object_or_404(User, id=id, is_active=True)
+        label = f'User #{target.pk}: {target.username}'
+        profile = getattr(target, 'jobseeker_profile', None)
+        snapshot = target.username
+        if profile:
+            snapshot += f'\n{profile.headline}'
+            for name in ('skills', 'education', 'work_experience', 'links'):
+                if getattr(profile, f'show_{name}'):
+                    snapshot += f'\n{getattr(profile, name)}'
+    else:
+        raise Http404
+    form = ContentReportForm(request.POST if request.method == 'POST' else None)
+    if request.method == 'POST' and form.is_valid():
+        report = form.save(commit=False)
+        report.reporter = request.user
+        report.target_label = label
+        report.content_snapshot = snapshot
+        if kind == 'job':
+            report.job = target
+        else:
+            report.reported_user = target
+        report.save()
+        messages.success(request, 'Your report was submitted for administrator review.')
+        return redirect('jobs.index')
+    return render(request, 'jobs/report_content.html', {
+        'template_data': {'title': 'Report content', 'target_label': label, 'form': form}
+    })

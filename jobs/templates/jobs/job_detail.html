@@ -17,6 +17,10 @@
           <span class="badge text-bg-secondary ms-2">Visa sponsorship</span>
           {% endif %}
         </p>
+        {% if user.is_authenticated %}
+        <a class="btn btn-outline-danger btn-sm" href="{% url 'jobs.report_content' kind='job' id=template_data.job.id %}">Report job</a>
+        <a class="btn btn-outline-danger btn-sm" href="{% url 'jobs.report_content' kind='user' id=template_data.job.recruiter_id %}">Report recruiter</a>
+        {% endif %}
         <hr />
         <p>{{ template_data.job.description|linebreaks }}</p>
         {% if template_data.is_owner %}
